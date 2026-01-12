@@ -9,6 +9,7 @@ export interface HackathonFilters {
   status?: string[];
   format?: string[];
   chains?: string[];
+  source?: string[];
   search?: string;
 }
 
@@ -184,6 +185,10 @@ async function fetchHackathons(filters?: HackathonFilters): Promise<HackathonRow
       data = data.filter((h) => h.chains.some((c) => filters.chains!.includes(c)));
     }
 
+    if (filters?.source && filters.source.length > 0) {
+      data = data.filter((h) => filters.source!.includes(h.source));
+    }
+
     if (filters?.search) {
       const search = filters.search.toLowerCase();
       data = data.filter(
@@ -210,6 +215,10 @@ async function fetchHackathons(filters?: HackathonFilters): Promise<HackathonRow
 
   if (filters?.chains && filters.chains.length > 0) {
     query = query.overlaps("chains", filters.chains);
+  }
+
+  if (filters?.source && filters.source.length > 0) {
+    query = query.in("source", filters.source);
   }
 
   if (filters?.search) {

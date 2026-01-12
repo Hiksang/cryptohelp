@@ -23,6 +23,19 @@ const FORMAT_OPTIONS = [
   { value: "hybrid", label: "Hybrid" },
 ];
 
+const PLATFORM_OPTIONS = [
+  { value: "ethglobal", label: "ETHGlobal" },
+  { value: "devfolio", label: "Devfolio" },
+  { value: "dorahacks", label: "DoraHacks" },
+  { value: "taikai", label: "TAIKAI" },
+  { value: "hackquest", label: "HackQuest" },
+  { value: "akindo", label: "Akindo" },
+  { value: "devpost", label: "Devpost" },
+  { value: "colosseum", label: "Colosseum" },
+  { value: "encode", label: "Encode Club" },
+  { value: "superteam", label: "Superteam" },
+];
+
 const CHAIN_OPTIONS = [
   { name: "Ethereum", logo: "/chains/ethereum.svg" },
   { name: "Polygon", logo: "/chains/polygon.svg" },
@@ -40,13 +53,15 @@ export default function HackathonsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedFormat, setSelectedFormat] = useState<string[]>([]);
   const [selectedChains, setSelectedChains] = useState<string[]>([]);
+  const [selectedPlatform, setSelectedPlatform] = useState<string[]>([]);
 
   const filters: HackathonFilters = useMemo(() => ({
     status: selectedStatus.length > 0 ? selectedStatus : undefined,
     format: selectedFormat.length > 0 ? selectedFormat : undefined,
     chains: selectedChains.length > 0 ? selectedChains : undefined,
+    source: selectedPlatform.length > 0 ? selectedPlatform : undefined,
     search: searchQuery || undefined,
-  }), [selectedStatus, selectedFormat, selectedChains, searchQuery]);
+  }), [selectedStatus, selectedFormat, selectedChains, selectedPlatform, searchQuery]);
 
   const { data: hackathons, isLoading, error } = useHackathons(filters);
 
@@ -66,6 +81,7 @@ export default function HackathonsPage() {
     setSelectedStatus([]);
     setSelectedFormat([]);
     setSelectedChains([]);
+    setSelectedPlatform([]);
     setSearchQuery("");
   };
 
@@ -73,6 +89,7 @@ export default function HackathonsPage() {
     selectedStatus.length > 0 ||
     selectedFormat.length > 0 ||
     selectedChains.length > 0 ||
+    selectedPlatform.length > 0 ||
     searchQuery.length > 0;
 
   const stats = useMemo(() => {
@@ -112,7 +129,7 @@ export default function HackathonsPage() {
             Filters
             {hasActiveFilters && (
               <span className="ml-1 rounded-full bg-primary text-primary-foreground px-1.5 text-xs">
-                {selectedStatus.length + selectedFormat.length + selectedChains.length}
+                {selectedStatus.length + selectedFormat.length + selectedChains.length + selectedPlatform.length}
               </span>
             )}
           </Button>
@@ -211,6 +228,24 @@ export default function HackathonsPage() {
                 </div>
               </div>
 
+              {/* Platform Filter */}
+              <div className="rounded-lg border bg-white p-4">
+                <h3 className="mb-3 font-semibold text-gray-900">Platform</h3>
+                <div className="space-y-2">
+                  {PLATFORM_OPTIONS.map((option) => (
+                    <label key={option.value} className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedPlatform.includes(option.value)}
+                        onChange={() => toggleFilter(option.value, selectedPlatform, setSelectedPlatform)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               {/* Chains Filter */}
               <div className="rounded-lg border bg-white p-4">
                 <h3 className="mb-3 font-semibold text-gray-900">Chains</h3>
@@ -283,6 +318,24 @@ export default function HackathonsPage() {
                             type="checkbox"
                             checked={selectedFormat.includes(option.value)}
                             onChange={() => toggleFilter(option.value, selectedFormat, setSelectedFormat)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{option.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Platform Filter */}
+                  <div>
+                    <h3 className="mb-3 font-semibold text-gray-900">Platform</h3>
+                    <div className="space-y-2">
+                      {PLATFORM_OPTIONS.map((option) => (
+                        <label key={option.value} className="flex cursor-pointer items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedPlatform.includes(option.value)}
+                            onChange={() => toggleFilter(option.value, selectedPlatform, setSelectedPlatform)}
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
                           <span className="text-sm text-gray-700">{option.label}</span>
