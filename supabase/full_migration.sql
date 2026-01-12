@@ -230,5 +230,116 @@ FROM scrape_jobs
 ORDER BY source, entity_type, created_at DESC;
 
 -- ============================================
+-- 005: Create feedback table
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type VARCHAR(20) NOT NULL CHECK (type IN ('bug', 'feature', 'general', 'content')),
+  message TEXT NOT NULL,
+  email VARCHAR(255),
+  page_url TEXT,
+  user_agent TEXT,
+  metadata JSONB DEFAULT '{}',
+  status VARCHAR(20) NOT NULL DEFAULT 'new'
+    CHECK (status IN ('new', 'reviewed', 'in_progress', 'resolved', 'wont_fix')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback(type);
+CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback(status);
+CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at DESC);
+
+DROP TRIGGER IF EXISTS update_feedback_updated_at ON feedback;
+CREATE TRIGGER update_feedback_updated_at
+  BEFORE UPDATE ON feedback
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Enable RLS
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
+
+-- Allow anyone to insert feedback (public submission)
+CREATE POLICY "Anyone can submit feedback" ON feedback
+  FOR INSERT WITH CHECK (true);
+
+-- Only authenticated users can read feedback (for admin)
+CREATE POLICY "Only admins can read feedback" ON feedback
+  FOR SELECT USING (false);
+
+-- ============================================
+-- 006: Create analytics_events table
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS analytics_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_type VARCHAR(50) NOT NULL,
+  event_name VARCHAR(100) NOT NULL,
+  page_url TEXT,
+  referrer TEXT,
+  properties JSONB DEFAULT '{}',
+  session_id VARCHAR(100),
+  user_agent TEXT,
+  ip_hash VARCHAR(64),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_event_type ON analytics_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_analytics_event_name ON analytics_events(event_name);
+CREATE INDEX IF NOT EXISTS idx_analytics_created_at ON analytics_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_analytics_session ON analytics_events(session_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_page ON analytics_events(page_url);
+CREATE INDEX IF NOT EXISTS idx_analytics_type_name_date ON analytics_events(event_type, event_name, created_at DESC);
+
+-- Enable RLS
+ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
+
+-- Allow anyone to insert events
+CREATE POLICY "Anyone can insert events" ON analytics_events
+  FOR INSERT WITH CHECK (true);
+
+-- Only admins can read events
+CREATE POLICY "Only admins can read events" ON analytics_events
+  FOR SELECT USING (false);
+
+-- View for daily event counts
+CREATE OR REPLACE VIEW analytics_daily_summary AS
+SELECT
+  DATE(created_at) as date,
+  event_type,
+  event_name,
+  COUNT(*) as event_count,
+  COUNT(DISTINCT session_id) as unique_sessions
+FROM analytics_events
+GROUP BY DATE(created_at), event_type, event_name
+ORDER BY date DESC, event_count DESC;
+
+-- View for page views
+CREATE OR REPLACE VIEW analytics_page_views AS
+SELECT
+  DATE(created_at) as date,
+  page_url,
+  COUNT(*) as views,
+  COUNT(DISTINCT session_id) as unique_visitors
+FROM analytics_events
+WHERE event_type = 'page_view'
+GROUP BY DATE(created_at), page_url
+ORDER BY date DESC, views DESC;
+
+-- View for click events
+CREATE OR REPLACE VIEW analytics_clicks AS
+SELECT
+  DATE(created_at) as date,
+  event_name,
+  properties->>'targetType' as target_type,
+  properties->>'targetId' as target_id,
+  COUNT(*) as click_count
+FROM analytics_events
+WHERE event_type = 'click'
+GROUP BY DATE(created_at), event_name, properties->>'targetType', properties->>'targetId'
+ORDER BY date DESC, click_count DESC;
+
+-- ============================================
 -- Done!
 -- ============================================
