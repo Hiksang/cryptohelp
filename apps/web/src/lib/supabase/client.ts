@@ -55,11 +55,78 @@ export type Database = {
           updated_at: string;
           last_scraped_at: string;
         };
-        Insert: Omit<
-          Database["public"]["Tables"]["hackathons"]["Row"],
-          "id" | "created_at" | "updated_at"
-        >;
-        Update: Partial<Database["public"]["Tables"]["hackathons"]["Insert"]>;
+        Insert: {
+          source: string;
+          source_id: string;
+          slug: string;
+          name: string;
+          description?: string | null;
+          short_description?: string | null;
+          start_date: string;
+          end_date: string;
+          registration_start_date?: string | null;
+          registration_end_date?: string | null;
+          timezone?: string | null;
+          format: "online" | "in-person" | "hybrid";
+          location?: Record<string, unknown> | null;
+          prize_pool?: Record<string, unknown> | null;
+          chains?: string[];
+          chain_ids?: number[];
+          categories?: string[];
+          themes?: string[];
+          sponsors?: Record<string, unknown>[];
+          registration_url: string;
+          website_url?: string | null;
+          discord_url?: string | null;
+          telegram_url?: string | null;
+          twitter_url?: string | null;
+          logo_url?: string | null;
+          banner_url?: string | null;
+          participant_count?: number | null;
+          project_count?: number | null;
+          status?: string;
+          is_official?: boolean;
+          is_featured?: boolean;
+          raw_data?: Record<string, unknown> | null;
+          content_hash?: string | null;
+          last_scraped_at?: string;
+        };
+        Update: {
+          source?: string;
+          source_id?: string;
+          slug?: string;
+          name?: string;
+          description?: string | null;
+          short_description?: string | null;
+          start_date?: string;
+          end_date?: string;
+          registration_start_date?: string | null;
+          registration_end_date?: string | null;
+          timezone?: string | null;
+          format?: "online" | "in-person" | "hybrid";
+          location?: Record<string, unknown> | null;
+          prize_pool?: Record<string, unknown> | null;
+          chains?: string[];
+          chain_ids?: number[];
+          categories?: string[];
+          themes?: string[];
+          sponsors?: Record<string, unknown>[];
+          registration_url?: string;
+          website_url?: string | null;
+          discord_url?: string | null;
+          telegram_url?: string | null;
+          twitter_url?: string | null;
+          logo_url?: string | null;
+          banner_url?: string | null;
+          participant_count?: number | null;
+          project_count?: number | null;
+          status?: string;
+          is_official?: boolean;
+          is_featured?: boolean;
+          raw_data?: Record<string, unknown> | null;
+          content_hash?: string | null;
+          last_scraped_at?: string;
+        };
       };
       grants: {
         Row: {
@@ -95,11 +162,66 @@ export type Database = {
           updated_at: string;
           last_scraped_at: string;
         };
-        Insert: Omit<
-          Database["public"]["Tables"]["grants"]["Row"],
-          "id" | "created_at" | "updated_at"
-        >;
-        Update: Partial<Database["public"]["Tables"]["grants"]["Insert"]>;
+        Insert: {
+          source: string;
+          source_id: string;
+          slug: string;
+          foundation: Record<string, unknown>;
+          name: string;
+          program_name?: string | null;
+          description?: string | null;
+          short_description?: string | null;
+          funding?: Record<string, unknown> | null;
+          application_deadline?: string | null;
+          program_start_date?: string | null;
+          program_end_date?: string | null;
+          is_rolling?: boolean;
+          categories?: string[];
+          tracks?: string[];
+          eligibility?: Record<string, unknown> | null;
+          application_url: string;
+          guidelines_url?: string | null;
+          faq_url?: string | null;
+          logo_url?: string | null;
+          banner_url?: string | null;
+          status?: string;
+          is_featured?: boolean;
+          chains?: string[];
+          chain_ids?: number[];
+          raw_data?: Record<string, unknown> | null;
+          content_hash?: string | null;
+          last_scraped_at?: string;
+        };
+        Update: {
+          source?: string;
+          source_id?: string;
+          slug?: string;
+          foundation?: Record<string, unknown>;
+          name?: string;
+          program_name?: string | null;
+          description?: string | null;
+          short_description?: string | null;
+          funding?: Record<string, unknown> | null;
+          application_deadline?: string | null;
+          program_start_date?: string | null;
+          program_end_date?: string | null;
+          is_rolling?: boolean;
+          categories?: string[];
+          tracks?: string[];
+          eligibility?: Record<string, unknown> | null;
+          application_url?: string;
+          guidelines_url?: string | null;
+          faq_url?: string | null;
+          logo_url?: string | null;
+          banner_url?: string | null;
+          status?: string;
+          is_featured?: boolean;
+          chains?: string[];
+          chain_ids?: number[];
+          raw_data?: Record<string, unknown> | null;
+          content_hash?: string | null;
+          last_scraped_at?: string;
+        };
       };
       chains: {
         Row: {
@@ -117,6 +239,97 @@ export type Database = {
           metadata: Record<string, unknown>;
           created_at: string;
           updated_at: string;
+        };
+        Insert: {
+          chain_id?: number | null;
+          caip2?: string | null;
+          name: string;
+          symbol: string;
+          type: string;
+          evm_compatible?: boolean;
+          logo_url?: string | null;
+          explorer_url?: string | null;
+          website_url?: string | null;
+          aliases?: string[];
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          chain_id?: number | null;
+          caip2?: string | null;
+          name?: string;
+          symbol?: string;
+          type?: string;
+          evm_compatible?: boolean;
+          logo_url?: string | null;
+          explorer_url?: string | null;
+          website_url?: string | null;
+          aliases?: string[];
+          metadata?: Record<string, unknown>;
+        };
+      };
+      analytics_events: {
+        Row: {
+          id: string;
+          event_type: string;
+          event_name: string;
+          page_url: string | null;
+          referrer: string | null;
+          properties: Record<string, unknown>;
+          session_id: string | null;
+          user_agent: string | null;
+          ip_hash: string | null;
+          created_at: string;
+        };
+        Insert: {
+          event_type: string;
+          event_name: string;
+          page_url?: string | null;
+          referrer?: string | null;
+          properties?: Record<string, unknown>;
+          session_id?: string | null;
+          user_agent?: string | null;
+          ip_hash?: string | null;
+        };
+        Update: {
+          event_type?: string;
+          event_name?: string;
+          page_url?: string | null;
+          referrer?: string | null;
+          properties?: Record<string, unknown>;
+          session_id?: string | null;
+          user_agent?: string | null;
+          ip_hash?: string | null;
+        };
+      };
+      feedback: {
+        Row: {
+          id: string;
+          type: "bug" | "feature" | "general" | "content";
+          message: string;
+          email: string | null;
+          page_url: string | null;
+          user_agent: string | null;
+          metadata: Record<string, unknown>;
+          status: "new" | "reviewed" | "in_progress" | "resolved" | "wont_fix";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          type: "bug" | "feature" | "general" | "content";
+          message: string;
+          email?: string | null;
+          page_url?: string | null;
+          user_agent?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          type?: "bug" | "feature" | "general" | "content";
+          message?: string;
+          email?: string | null;
+          page_url?: string | null;
+          user_agent?: string | null;
+          metadata?: Record<string, unknown>;
+          status?: "new" | "reviewed" | "in_progress" | "resolved" | "wont_fix";
         };
       };
     };

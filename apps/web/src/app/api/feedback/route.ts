@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/supabase/client";
+
+type FeedbackInsert = Database["public"]["Tables"]["feedback"]["Insert"];
+type FeedbackRow = Database["public"]["Tables"]["feedback"]["Row"];
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,15 +29,17 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerClient();
 
+    const insertData: FeedbackInsert = {
+      type,
+      message,
+      email: email || null,
+      page_url: pageUrl || null,
+      user_agent: userAgent || null,
+    };
+
     const { data, error } = await supabase
       .from("feedback")
-      .insert({
-        type,
-        message,
-        email: email || null,
-        page_url: pageUrl || null,
-        user_agent: userAgent || null,
-      })
+      .insert(insertData as never)
       .select()
       .single();
 
@@ -45,7 +51,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, id: data.id });
+    return NextResponse.json({ success: true, id: (data as FeedbackRow).id });
   } catch (error) {
     console.error("Feedback API error:", error);
     return NextResponse.json(

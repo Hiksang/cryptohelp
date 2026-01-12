@@ -227,7 +227,7 @@ async function fetchGrants(filters?: GrantFilters): Promise<GrantRow[]> {
   if (filters?.categories && filters.categories.length > 0) {
     const lowerCaseFilters = filters.categories.map((c) => c.toLowerCase());
     result = result.filter((g) =>
-      g.categories.some((c) => lowerCaseFilters.includes(c.toLowerCase()))
+      g.categories.some((c: string) => lowerCaseFilters.includes(c.toLowerCase()))
     );
   }
 

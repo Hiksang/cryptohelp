@@ -112,7 +112,7 @@ export function HackathonCard({ hackathon }: HackathonCardProps) {
         <div className="flex items-start gap-3">
           {showLogo ? (
             <img
-              src={hackathon.logo_url}
+              src={hackathon.logo_url ?? undefined}
               alt={`${hackathon.name} logo`}
               className="w-12 h-12 rounded-lg object-cover bg-white shadow-sm shrink-0"
               onError={() => setLogoError(true)}

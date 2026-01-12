@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createHash } from "crypto";
+import type { Database } from "@/lib/supabase/client";
+
+type AnalyticsInsert = Database["public"]["Tables"]["analytics_events"]["Insert"];
 
 // Hash IP for privacy (don't store actual IPs)
 function hashIP(ip: string | null): string | null {
@@ -28,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerClient();
 
-    const { error } = await supabase.from("analytics_events").insert({
+    const insertData: AnalyticsInsert = {
       event_type: eventType,
       event_name: eventName,
       page_url: pageUrl || null,
@@ -37,7 +40,11 @@ export async function POST(request: NextRequest) {
       session_id: sessionId || null,
       user_agent: userAgent || null,
       ip_hash: ipHash,
-    });
+    };
+
+    const { error } = await supabase
+      .from("analytics_events")
+      .insert(insertData as never);
 
     if (error) {
       console.error("Failed to save analytics event:", error);
