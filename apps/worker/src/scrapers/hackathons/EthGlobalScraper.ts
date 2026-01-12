@@ -2,7 +2,7 @@ import { PlaywrightCrawler, Dataset } from "crawlee";
 import { supabase } from "../../config/supabase.js";
 import { generateContentHash, generateSlug } from "../../utils/hash.js";
 import { normalizeChains, extractChainsFromText } from "../../utils/chainNormalizer.js";
-import type { Hackathon, HackathonFormat, HackathonStatus } from "@cryptohelp/shared";
+import type { Hackathon, HackathonFormat, HackathonStatus } from "@buidltown/shared";
 
 interface EthGlobalEvent {
   name: string;

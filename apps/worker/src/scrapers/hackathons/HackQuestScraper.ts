@@ -2,7 +2,7 @@ import { PlaywrightCrawler } from "crawlee";
 import { supabase } from "../../config/supabase.js";
 import { generateContentHash, generateSlug } from "../../utils/hash.js";
 import { normalizeChains } from "../../utils/chainNormalizer.js";
-import type { HackathonFormat, HackathonStatus } from "@cryptohelp/shared";
+import type { HackathonFormat, HackathonStatus } from "@buidltown/shared";
 
 interface HackQuestHackathon {
   id: string;

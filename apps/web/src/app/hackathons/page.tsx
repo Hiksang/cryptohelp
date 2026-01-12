@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, Filter, X, ChevronLeft, Loader2 } from "lucide-react";
+import { Search, Filter, X, Loader2 } from "lucide-react";
+import { PageNav } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HackathonCard } from "@/components/hackathons";
@@ -95,10 +96,7 @@ export default function HackathonsPage() {
       <header className="sticky top-0 z-40 border-b bg-white">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-              <ChevronLeft className="h-5 w-5" />
-            </Link>
-            <h1 className="text-xl font-bold text-gray-900">Hackathons</h1>
+            <PageNav />
             <Badge variant="secondary" className="hidden sm:inline-flex">
               {stats.total} events
             </Badge>

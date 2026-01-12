@@ -2,6 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
+import { usePostHog } from "posthog-js/react";
 import { format, formatDistanceToNow, isPast, isFuture } from "date-fns";
 import {
   ChevronLeft,
@@ -89,11 +90,22 @@ function getTimeStatus(startDate: Date, endDate: Date): { label: string; color: 
 }
 
 function HackathonDetailContent({ hackathon }: { hackathon: HackathonRow }) {
+  const posthog = usePostHog();
   const startDate = new Date(hackathon.start_date);
   const endDate = new Date(hackathon.end_date);
   const prizeDisplay = formatPrizePool(hackathon.prize_pool);
   const locationInfo = getLocation(hackathon.location);
   const timeStatus = getTimeStatus(startDate, endDate);
+
+  const trackExternalClick = (linkType: string, url: string) => {
+    posthog?.capture("external_link_clicked", {
+      link_type: linkType,
+      url: url,
+      hackathon_name: hackathon.name,
+      hackathon_slug: hackathon.slug,
+      hackathon_source: hackathon.source,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -305,6 +317,7 @@ function HackathonDetailContent({ hackathon }: { hackathon: HackathonRow }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2"
+                    onClick={() => trackExternalClick("registration", hackathon.registration_url)}
                   >
                     {hackathon.status === "registration_open" ? "Register Now" : "View Event"}
                     <ExternalLink className="h-4 w-4" />
@@ -318,6 +331,7 @@ function HackathonDetailContent({ hackathon }: { hackathon: HackathonRow }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2"
+                      onClick={() => trackExternalClick("website", hackathon.website_url!)}
                     >
                       Visit Website
                       <ExternalLink className="h-4 w-4" />
@@ -341,6 +355,7 @@ function HackathonDetailContent({ hackathon }: { hackathon: HackathonRow }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2"
+                        onClick={() => trackExternalClick("discord", hackathon.discord_url!)}
                       >
                         <MessageCircle className="h-4 w-4" />
                         Discord
@@ -354,6 +369,7 @@ function HackathonDetailContent({ hackathon }: { hackathon: HackathonRow }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2"
+                        onClick={() => trackExternalClick("twitter", hackathon.twitter_url!)}
                       >
                         <Twitter className="h-4 w-4" />
                         Twitter
@@ -367,6 +383,7 @@ function HackathonDetailContent({ hackathon }: { hackathon: HackathonRow }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2"
+                        onClick={() => trackExternalClick("telegram", hackathon.telegram_url!)}
                       >
                         <MessageCircle className="h-4 w-4" />
                         Telegram

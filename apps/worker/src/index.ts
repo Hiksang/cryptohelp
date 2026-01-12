@@ -160,7 +160,7 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 // Start worker
-console.log("Starting CryptoHelp worker...");
+console.log("Starting buidlTown worker...");
 initializeSchedules().catch(console.error);
 
 worker.on("completed", (job) => {

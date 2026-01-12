@@ -2,6 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
+import { usePostHog } from "posthog-js/react";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import {
   ChevronLeft,
@@ -116,11 +117,23 @@ function getDeadlineStatus(deadline: string | null, isRolling: boolean): { label
 }
 
 function GrantDetailContent({ grant }: { grant: GrantRow }) {
+  const posthog = usePostHog();
   const fundingDisplay = formatFunding(grant.funding);
   const fundingDetails = getFundingDetails(grant.funding);
   const deadlineStatus = getDeadlineStatus(grant.application_deadline, grant.is_rolling);
   const foundation = grant.foundation as { name: string; chain?: string; websiteUrl?: string } | null;
   const eligibility = grant.eligibility as { requirements?: string[] } | null;
+
+  const trackExternalClick = (linkType: string, url: string) => {
+    posthog?.capture("external_link_clicked", {
+      link_type: linkType,
+      url: url,
+      grant_name: grant.name,
+      grant_slug: grant.slug,
+      grant_source: grant.source,
+      foundation_name: foundation?.name,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -369,6 +382,7 @@ function GrantDetailContent({ grant }: { grant: GrantRow }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2"
+                    onClick={() => trackExternalClick("application", grant.application_url)}
                   >
                     Apply Now
                     <ExternalLink className="h-4 w-4" />
@@ -382,6 +396,7 @@ function GrantDetailContent({ grant }: { grant: GrantRow }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2"
+                      onClick={() => trackExternalClick("guidelines", grant.guidelines_url!)}
                     >
                       <FileText className="h-4 w-4" />
                       Guidelines
@@ -396,6 +411,7 @@ function GrantDetailContent({ grant }: { grant: GrantRow }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2"
+                      onClick={() => trackExternalClick("faq", grant.faq_url!)}
                     >
                       <HelpCircle className="h-4 w-4" />
                       FAQ
@@ -418,6 +434,7 @@ function GrantDetailContent({ grant }: { grant: GrantRow }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2"
+                      onClick={() => trackExternalClick("foundation_website", foundation.websiteUrl!)}
                     >
                       <Globe className="h-4 w-4" />
                       {foundation.name} Website

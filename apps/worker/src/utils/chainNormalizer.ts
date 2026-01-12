@@ -1,4 +1,4 @@
-import { CHAIN_ALIAS_MAP, CHAIN_BY_ID } from "@cryptohelp/shared";
+import { CHAIN_ALIAS_MAP, CHAIN_BY_ID } from "@buidltown/shared";
 
 /**
  * Normalize chain names from various sources to standard chain IDs.

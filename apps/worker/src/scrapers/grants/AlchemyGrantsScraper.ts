@@ -1,7 +1,7 @@
 import { PlaywrightCrawler } from "crawlee";
 import { supabase } from "../../config/supabase.js";
 import { generateContentHash, generateSlug } from "../../utils/hash.js";
-import type { GrantStatus, FundingFormat } from "@cryptohelp/shared";
+import type { GrantStatus, FundingFormat } from "@buidltown/shared";
 
 interface AlchemyGrant {
   name: string;

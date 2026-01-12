@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { usePostHog } from "posthog-js/react";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { Calendar, DollarSign, Building2, ChevronRight, Clock, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,10 +95,26 @@ function getDeadlineInfo(deadline: string | null, isRolling: boolean): { text: s
 }
 
 export function GrantCard({ grant }: GrantCardProps) {
+  const [logoError, setLogoError] = useState(false);
+  const posthog = usePostHog();
   const foundation = grant.foundation as Foundation | null;
   const funding = grant.funding as Funding | null;
   const fundingDisplay = formatFunding(funding);
   const deadlineInfo = getDeadlineInfo(grant.application_deadline, grant.is_rolling);
+
+  const logoUrl = grant.logo_url || foundation?.logoUrl;
+  const showLogo = logoUrl && !logoError;
+
+  const trackClick = () => {
+    posthog?.capture("grant_clicked", {
+      grant_name: grant.name,
+      grant_slug: grant.slug,
+      grant_source: grant.source,
+      grant_status: grant.status,
+      foundation_name: foundation?.name,
+      is_rolling: grant.is_rolling,
+    });
+  };
 
   return (
     <Card className="group hover:shadow-lg transition-shadow duration-200 overflow-hidden">
@@ -115,17 +133,12 @@ export function GrantCard({ grant }: GrantCardProps) {
       <CardHeader className={grant.banner_url ? "-mt-8 relative z-10" : ""}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            {grant.logo_url ? (
+            {showLogo ? (
               <img
-                src={grant.logo_url}
+                src={logoUrl}
                 alt={`${grant.name} logo`}
                 className="w-12 h-12 rounded-lg object-cover bg-white shadow-sm"
-              />
-            ) : foundation?.logoUrl ? (
-              <img
-                src={foundation.logoUrl}
-                alt={`${foundation.name} logo`}
-                className="w-12 h-12 rounded-lg object-cover bg-white shadow-sm"
+                onError={() => setLogoError(true)}
               />
             ) : (
               <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
@@ -216,7 +229,7 @@ export function GrantCard({ grant }: GrantCardProps) {
 
         {/* Action Button */}
         <div className="pt-2">
-          <Button asChild className="w-full">
+          <Button asChild className="w-full" onClick={trackClick}>
             <Link
               href={`/grants/${grant.slug}`}
               className="flex items-center justify-center gap-2"

@@ -10,8 +10,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cryptohelp/shared": "workspace:*",
+    "@buidltown/shared": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
@@ -22,6 +23,7 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
+    "posthog-js": "^1.318.1",
     "react": "19.2.3",
     "react-big-calendar": "^1.19.4",
     "react-day-picker": "^9.13.0",

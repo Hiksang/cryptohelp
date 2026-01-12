@@ -1,4 +1,4 @@
--- Full Migration Script for CryptoHelp
+-- Full Migration Script for buidlTown
 -- Run this in Supabase SQL Editor
 
 -- ============================================

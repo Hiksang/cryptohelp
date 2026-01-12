@@ -342,7 +342,7 @@ function Footer() {
               <Zap className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="font-bold text-lg">CryptoHelp</p>
+              <p className="font-bold text-lg">buidlTown</p>
               <p className="text-sm text-gray-400">Web3 Hackathons & Grants</p>
             </div>
           </div>
@@ -357,7 +357,7 @@ function Footer() {
           </div>
 
           <p className="text-sm text-gray-500">
-            © 2026 CryptoHelp. All rights reserved.
+            © 2026 buidlTown. All rights reserved.
           </p>
         </div>
       </div>

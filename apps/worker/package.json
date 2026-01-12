@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cryptohelp/shared": "workspace:*",
+    "@buidltown/shared": "workspace:*",
     "@supabase/supabase-js": "^2.90.1",
     "bullmq": "^5.45.2",
     "crawlee": "^3.13.1",

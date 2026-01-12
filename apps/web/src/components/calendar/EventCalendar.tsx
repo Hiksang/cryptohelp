@@ -7,7 +7,7 @@ import { useState, useCallback, useMemo } from "react";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { CalendarEvent } from "./CalendarEvent";
 import { EventPopover } from "./EventPopover";
-import type { CalendarEvent as CalendarEventType } from "@cryptohelp/shared";
+import type { CalendarEvent as CalendarEventType } from "@buidltown/shared";
 
 const locales = {
   "en-US": enUS,

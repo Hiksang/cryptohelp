@@ -2,7 +2,7 @@ import { PlaywrightCrawler } from "crawlee";
 import { supabase } from "../../config/supabase.js";
 import { generateContentHash, generateSlug } from "../../utils/hash.js";
 import { normalizeChains } from "../../utils/chainNormalizer.js";
-import type { GrantStatus } from "@cryptohelp/shared";
+import type { GrantStatus } from "@buidltown/shared";
 
 interface FoundationGrant {
   name: string;
