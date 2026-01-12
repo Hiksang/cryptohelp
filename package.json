@@ -11,7 +11,10 @@
     "dev:web": "turbo dev --filter=web",
     "dev:worker": "turbo dev --filter=worker",
     "build:web": "turbo build --filter=web",
-    "build:worker": "turbo build --filter=worker"
+    "build:worker": "turbo build --filter=worker",
+    "scrape": "pnpm --filter=worker scrape:all",
+    "scrape:hackathons": "pnpm --filter=worker scrape:ethglobal && pnpm --filter=worker scrape:devfolio",
+    "scrape:grants": "pnpm --filter=worker scrape:grants"
   },
   "keywords": ["web3", "hackathon", "grants", "blockchain"],
   "author": "",
