@@ -1,8 +1,9 @@
-import { PlaywrightCrawler, Dataset } from "crawlee";
+import { PlaywrightCrawler } from "crawlee";
 import { supabase } from "../../config/supabase";
 import { generateContentHash, generateSlug } from "../../utils/hash";
-import { normalizeChains, extractChainsFromText } from "../../utils/chainNormalizer";
-import type { Hackathon, HackathonFormat, HackathonStatus } from "../../../lib/shared";
+import { normalizeChains } from "../../utils/chainNormalizer";
+import { parseEventDates } from "../../utils/dateParser";
+import type { HackathonFormat, HackathonStatus } from "../../../lib/shared";
 
 interface EthGlobalEvent {
   name: string;
@@ -30,63 +31,136 @@ export class EthGlobalScraper {
     const baseUrl = this.baseUrl;
 
     const crawler = new PlaywrightCrawler({
-      maxConcurrency: 2,
+      maxConcurrency: 1,
       maxRequestRetries: 3,
-      requestHandlerTimeoutSecs: 60,
+      requestHandlerTimeoutSecs: 120,
+      headless: true,
 
       async requestHandler({ page, request, log }) {
         log.info(`Processing ${request.url}`);
 
-        // Wait for the events to load
-        await page.waitForSelector('[data-testid="event-card"], .event-card, article', {
-          timeout: 30000,
-        }).catch(() => {
-          log.warning("Event cards not found with expected selectors, trying alternative...");
-        });
+        // Wait for page to fully load
+        await page.waitForLoadState("networkidle");
 
-        // Try multiple selectors for event cards
-        const eventCards = await page.$$('article, [data-testid="event-card"], .event-card, a[href*="/events/"]');
+        // Wait for content to appear
+        await page.waitForTimeout(3000);
 
-        for (const card of eventCards) {
+        // Try to find event sections
+        // ETHGlobal typically has sections for Upcoming, Ongoing, and Past events
+        const sections = await page.$$("section, [class*='section'], [class*='events']");
+        log.info(`Found ${sections.length} sections`);
+
+        // Get all links that look like event links
+        const eventLinks = await page.$$eval(
+          "a[href*='/events/']",
+          (links) => links.map((link) => {
+            const href = link.getAttribute("href") || "";
+            const text = link.textContent || "";
+            const parent = link.closest("article, div, li");
+            const parentText = parent?.textContent || "";
+            return { href, text, parentText };
+          })
+        );
+
+        log.info(`Found ${eventLinks.length} event links`);
+
+        // Process each unique event
+        const seenSlugs = new Set<string>();
+
+        for (const linkInfo of eventLinks) {
           try {
-            const nameEl = await card.$("h2, h3, .event-name, [class*='title']");
-            const name = nameEl ? await nameEl.textContent() : null;
-            if (!name) continue;
+            const href = linkInfo.href;
+            const slug = href.split("/events/")[1]?.split("/")[0]?.split("?")[0];
 
-            const linkEl = await card.$("a[href*='/events/']");
-            const href = linkEl ? await linkEl.getAttribute("href") : null;
-            const slug = href?.split("/events/")[1]?.split("/")[0] || name.toLowerCase().replace(/\s+/g, "-");
+            if (!slug || seenSlugs.has(slug)) continue;
+            seenSlugs.add(slug);
 
-            const dateEl = await card.$("[class*='date'], time, .event-date");
-            const dateText = dateEl ? await dateEl.textContent() : null;
+            // Extract event name - usually in the link or nearby heading
+            let name = linkInfo.text.trim();
 
-            const locationEl = await card.$("[class*='location'], .event-location");
-            const location = locationEl ? await locationEl.textContent() : "Online";
-
-            // Determine format from location
-            let format: EthGlobalEvent["format"] = "online";
-            if (location?.toLowerCase().includes("online") || location?.toLowerCase().includes("virtual")) {
-              format = "online";
-            } else if (location && location.trim() !== "") {
-              format = "in-person";
+            // Clean up the name
+            if (!name || name.length < 3) {
+              // Try to extract from parent text
+              const lines = linkInfo.parentText.split("\n").filter((l) => l.trim());
+              name = lines[0]?.trim() || slug;
             }
 
-            events.push({
-              name: name.trim(),
-              slug,
-              startDate: dateText || new Date().toISOString(),
-              endDate: dateText || new Date().toISOString(),
-              location: location?.trim() || "Online",
-              format,
-              prizePool: undefined, // Would need to scrape detail page
-              registrationUrl: `${baseUrl}/events/${slug}`,
-            });
+            // Skip non-event links (but name might have date appended, so check original)
+            const nameLower = name.toLowerCase();
+            if (nameLower.includes("apply now") ||
+                nameLower.includes("register now") ||
+                nameLower.includes("view all") ||
+                nameLower.includes("learn more")) {
+              continue;
+            }
+
+            // The name often has date concatenated: "ETHGlobal BangkokNov 15th, 2024Nov 17th, 2024Hackathon"
+            // Try to parse dates from the name itself
+            let parsedDates = parseEventDates(name);
+
+            // Clean up the event name by removing date parts and event type
+            let cleanName = name
+              .replace(/([A-Z][a-z]{2,})\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4}/g, "") // Remove "Nov 15th, 2024"
+              .replace(/(Hackathon|Conference|Summit|Virtual|Online|Co-working|Competition)/gi, "")
+              .replace(/ETHGlobal's First/gi, "")
+              .trim();
+
+            // If clean name is too short, use the slug
+            if (cleanName.length < 3) {
+              cleanName = slug
+                .split("-")
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(" ");
+            }
+
+            name = cleanName;
+
+            // Determine format from parent text
+            const parentLower = linkInfo.parentText.toLowerCase();
+            let format: EthGlobalEvent["format"] = "in-person";
+            let location = "";
+
+            if (parentLower.includes("online") || parentLower.includes("virtual")) {
+              format = "online";
+              location = "Online";
+            } else if (parentLower.includes("hybrid")) {
+              format = "hybrid";
+            }
+
+            // Try to extract location (city names) - also check the clean name
+            const textToSearch = (name + " " + linkInfo.parentText).toLowerCase();
+            const cityPatterns = [
+              /\b(bangkok|singapore|tokyo|london|paris|new york|san francisco|berlin|denver|dubai|mumbai|new delhi|delhi|seoul|taipei|brussels|cannes|sydney|melbourne|amsterdam|lisbon|prague|warsaw|istanbul|waterloo|buenos aires)\b/i,
+            ];
+
+            for (const pattern of cityPatterns) {
+              const cityMatch = textToSearch.match(pattern);
+              if (cityMatch) {
+                location = cityMatch[1].charAt(0).toUpperCase() + cityMatch[1].slice(1);
+                break;
+              }
+            }
+
+            // Only add if we have valid dates or it's a valid looking event
+            if (parsedDates || name.toLowerCase().includes("ethglobal") || name.toLowerCase().includes("pragma")) {
+              events.push({
+                name,
+                slug,
+                startDate: parsedDates?.startDate || "",
+                endDate: parsedDates?.endDate || "",
+                location: location || "TBA",
+                format,
+                registrationUrl: `${baseUrl}/events/${slug}`,
+              });
+              log.info(`Found event: ${name} (${slug}) - ${parsedDates ? "has dates" : "no date"}`);
+            }
           } catch (error) {
-            log.warning(`Failed to parse event card: ${error}`);
+            log.warning(`Failed to parse event link: ${error}`);
           }
         }
 
         found = events.length;
+        log.info(`Total events found: ${found}`);
       },
     });
 
@@ -94,6 +168,12 @@ export class EthGlobalScraper {
 
     // Save to database
     for (const event of events) {
+      // Skip events without valid dates
+      if (!event.startDate || !event.endDate) {
+        console.log(`Skipping ${event.name} - no valid dates`);
+        continue;
+      }
+
       try {
         const result = await this.saveEvent(event);
         if (result === "created") created++;
@@ -122,7 +202,7 @@ export class EthGlobalScraper {
       registration_end_date: null,
       timezone: null,
       format: event.format as HackathonFormat,
-      location: event.format !== "online" ? { location: event.location } : null,
+      location: event.format !== "online" ? { city: event.location } : null,
       prize_pool: event.prizePool ? { amount: event.prizePool, currency: "USD" } : null,
       chains,
       chain_ids: chainIds,

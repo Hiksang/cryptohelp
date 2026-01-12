@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  worker:
+    build: .
+    container_name: buidltown-worker
+    restart: unless-stopped
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SCRAPE_SCHEDULE=${SCRAPE_SCHEDULE:-0 0 * * *}
+    volumes:
+      - ./storage:/app/storage
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

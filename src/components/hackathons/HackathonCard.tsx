@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePostHog } from "posthog-js/react";
 import { format } from "date-fns";
-import { Calendar, MapPin, Globe, Users, Trophy, ChevronRight, Code2 } from "lucide-react";
+import { Calendar, MapPin, Globe, Users, Trophy, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,15 +35,6 @@ const formatLabels: Record<string, string> = {
   hybrid: "Hybrid",
 };
 
-const platformLogos: Record<string, string> = {
-  ethglobal: "/platforms/ethglobal.svg",
-  devfolio: "/platforms/devfolio.svg",
-  dorahacks: "/platforms/dorahacks.svg",
-  akindo: "/platforms/akindo.svg",
-  taikai: "/platforms/taikai.svg",
-  hackquest: "/platforms/hackquest.svg",
-};
-
 function formatPrizePool(prizePool: Record<string, unknown> | null): string | null {
   if (!prizePool) return null;
   const amount = prizePool.amount as number;
@@ -66,23 +56,12 @@ function getLocation(location: Record<string, unknown> | null): string | null {
   return parts.length > 0 ? parts.join(", ") : null;
 }
 
-// Sources with unreliable logo data - prefer platform logo
-const unreliableLogoSources = ["hackquest"];
-
 export function HackathonCard({ hackathon }: HackathonCardProps) {
-  const [logoError, setLogoError] = useState(false);
   const posthog = usePostHog();
   const startDate = new Date(hackathon.start_date);
   const endDate = new Date(hackathon.end_date);
   const prizeDisplay = formatPrizePool(hackathon.prize_pool);
   const locationDisplay = getLocation(hackathon.location);
-
-  const sourceLower = hackathon.source?.toLowerCase() || "";
-  const platformLogo = platformLogos[sourceLower];
-  const isUnreliableSource = unreliableLogoSources.includes(sourceLower);
-
-  // For unreliable sources, prefer platform logo over scraped logo
-  const showLogo = hackathon.logo_url && !logoError && !isUnreliableSource;
 
   const trackClick = () => {
     posthog?.capture("hackathon_clicked", {
@@ -108,37 +87,17 @@ export function HackathonCard({ hackathon }: HackathonCardProps) {
         </div>
       )}
 
-      <CardHeader className={hackathon.banner_url ? "-mt-8 relative z-10" : ""}>
-        <div className="flex items-start gap-3">
-          {showLogo ? (
-            <img
-              src={hackathon.logo_url ?? undefined}
-              alt={`${hackathon.name} logo`}
-              className="w-12 h-12 rounded-lg object-cover bg-white shadow-sm shrink-0"
-              onError={() => setLogoError(true)}
-            />
-          ) : platformLogo ? (
-            <img
-              src={platformLogo}
-              alt={`${hackathon.source} logo`}
-              className="w-12 h-12 rounded-lg object-cover shrink-0"
-            />
-          ) : (
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center shrink-0">
-              <Code2 className="h-6 w-6 text-white" />
-            </div>
-          )}
+      <CardHeader>
+        <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <CardTitle className="text-base font-semibold leading-snug line-clamp-2">
-                {hackathon.name}
-              </CardTitle>
-              <Badge className={`shrink-0 text-xs ${statusColors[hackathon.status] || "bg-gray-100 text-gray-800"}`}>
-                {statusLabels[hackathon.status] || hackathon.status}
-              </Badge>
-            </div>
+            <CardTitle className="text-base font-semibold leading-snug line-clamp-2">
+              {hackathon.name}
+            </CardTitle>
             <p className="text-xs text-muted-foreground capitalize mt-0.5">{hackathon.source}</p>
           </div>
+          <Badge className={`shrink-0 text-xs ${statusColors[hackathon.status] || "bg-gray-100 text-gray-800"}`}>
+            {statusLabels[hackathon.status] || hackathon.status}
+          </Badge>
         </div>
       </CardHeader>
 

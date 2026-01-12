@@ -1,0 +1,28 @@
+{
+  "name": "buidltown-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "scrape:all": "tsx src/scripts/scrape-all.ts",
+    "scrape:ethglobal": "tsx src/scripts/scrape-ethglobal.ts",
+    "scrape:devfolio": "tsx src/scripts/scrape-devfolio.ts",
+    "scrape:grants": "tsx src/scripts/scrape-grants.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.90.1",
+    "crawlee": "^3.13.1",
+    "dotenv": "^16.5.0",
+    "node-cron": "^3.0.3",
+    "playwright": "^1.52.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.20.0",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,71 @@
+export type HackathonFormat = "online" | "in-person" | "hybrid";
+export type HackathonStatus = "upcoming" | "registration_open" | "ongoing" | "judging" | "completed";
+export type GrantStatus = "active" | "upcoming" | "closed" | "paused";
+
+export interface Hackathon {
+  id?: string;
+  source: string;
+  source_id: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  short_description?: string | null;
+  start_date: string;
+  end_date: string;
+  registration_start_date?: string | null;
+  registration_end_date?: string | null;
+  timezone?: string | null;
+  format: HackathonFormat;
+  location?: Record<string, unknown> | null;
+  prize_pool?: Record<string, unknown> | null;
+  chains: string[];
+  chain_ids: number[];
+  categories: string[];
+  themes: string[];
+  sponsors: Record<string, unknown>[];
+  registration_url: string;
+  website_url?: string | null;
+  discord_url?: string | null;
+  telegram_url?: string | null;
+  twitter_url?: string | null;
+  logo_url?: string | null;
+  banner_url?: string | null;
+  participant_count?: number | null;
+  project_count?: number | null;
+  status: HackathonStatus;
+  is_official: boolean;
+  is_featured: boolean;
+  raw_data?: Record<string, unknown> | null;
+  content_hash?: string | null;
+}
+
+export interface Grant {
+  id?: string;
+  source: string;
+  source_id: string;
+  slug: string;
+  foundation: Record<string, unknown>;
+  name: string;
+  program_name?: string | null;
+  description?: string | null;
+  short_description?: string | null;
+  funding?: Record<string, unknown> | null;
+  application_deadline?: string | null;
+  program_start_date?: string | null;
+  program_end_date?: string | null;
+  is_rolling: boolean;
+  categories: string[];
+  tracks: string[];
+  eligibility?: Record<string, unknown> | null;
+  application_url: string;
+  guidelines_url?: string | null;
+  faq_url?: string | null;
+  logo_url?: string | null;
+  banner_url?: string | null;
+  status: GrantStatus;
+  is_featured: boolean;
+  chains: string[];
+  chain_ids: number[];
+  raw_data?: Record<string, unknown> | null;
+  content_hash?: string | null;
+}
