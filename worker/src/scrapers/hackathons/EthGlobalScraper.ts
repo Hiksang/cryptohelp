@@ -96,6 +96,18 @@ export class EthGlobalScraper {
     console.log(`ETHGlobal: Fetching detail pages for ${events.length} events...`);
     await this.fetchEventDetails(events);
 
+    // Ensure all dates are in ISO format before saving
+    for (const event of events) {
+      // If startDate is not ISO format, try to parse it
+      if (!event.startDate.match(/^\d{4}-\d{2}-\d{2}/)) {
+        const parsed = this.parseEventDate(event.startDate);
+        if (parsed) {
+          event.startDate = parsed.startDate;
+          event.endDate = parsed.endDate;
+        }
+      }
+    }
+
     // Save to database
     for (const event of events) {
       try {
@@ -159,15 +171,23 @@ export class EthGlobalScraper {
       .single();
 
     if (!existing) {
-      await supabase.from("hackathons").insert(hackathonData);
+      const { error } = await supabase.from("hackathons").insert(hackathonData);
+      if (error) {
+        console.error(`Failed to insert ${event.slug}:`, error.message);
+        return "unchanged";
+      }
       return "created";
     }
 
     if (existing.content_hash !== hackathonData.content_hash) {
-      await supabase
+      const { error } = await supabase
         .from("hackathons")
         .update(hackathonData)
         .eq("id", existing.id);
+      if (error) {
+        console.error(`Failed to update ${event.slug}:`, error.message);
+        return "unchanged";
+      }
       return "updated";
     }
 
@@ -362,6 +382,22 @@ export class EthGlobalScraper {
           startDate: date.toISOString(),
           endDate: new Date(year, month, day + 3).toISOString()
         };
+      }
+
+      // Pattern: "Nov 21st, 2025" or "July 8th, 2022" (single date with ordinal)
+      const ordinalMatch = dateText.match(/([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})/i);
+      if (ordinalMatch) {
+        const month = months[ordinalMatch[1].toLowerCase()];
+        const day = parseInt(ordinalMatch[2], 10);
+        const year = parseInt(ordinalMatch[3], 10);
+
+        if (month !== undefined) {
+          const date = new Date(year, month, day);
+          return {
+            startDate: date.toISOString(),
+            endDate: new Date(year, month, day + 2).toISOString() // Assume 3-day event
+          };
+        }
       }
     } catch (error) {
       console.error(`Failed to parse event date: ${dateText}`, error);
