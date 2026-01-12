@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { CalendarEvent } from "@buidltown/shared";
+import type { CalendarEvent } from "@/lib/shared";
 import { ExternalLink, Calendar, MapPin, Award } from "lucide-react";
 
 interface EventPopoverProps {

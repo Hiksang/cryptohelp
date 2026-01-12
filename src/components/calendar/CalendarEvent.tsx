@@ -1,6 +1,6 @@
 "use client";
 
-import type { CalendarEvent as CalendarEventType } from "@buidltown/shared";
+import type { CalendarEvent as CalendarEventType } from "@/lib/shared";
 import { Badge } from "@/components/ui/badge";
 
 interface CalendarEventProps {
