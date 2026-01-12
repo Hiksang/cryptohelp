@@ -18,6 +18,9 @@ interface TaikaiHackathon {
   logoUrl?: string;
   bannerUrl?: string;
   registrationUrl: string;
+  discordUrl?: string;
+  twitterUrl?: string;
+  telegramUrl?: string;
 }
 
 export class TaikaiScraper {
@@ -89,8 +92,8 @@ export class TaikaiScraper {
             hackathons.push({
               id,
               name: name.trim(),
-              startDate: dateText || new Date().toISOString(),
-              endDate: dateText || new Date().toISOString(),
+              startDate: "", // Will be fetched from detail page
+              endDate: "", // Will be fetched from detail page
               format,
               prizePool: prizeText?.trim(),
               participantCount: participantMatch ? parseInt(participantMatch[1]) : undefined,
@@ -112,6 +115,10 @@ export class TaikaiScraper {
     const uniqueHackathons = Array.from(
       new Map(hackathons.map(h => [h.id, h])).values()
     );
+
+    // Fetch details from individual hackathon pages
+    console.log(`Taikai: Fetching detail pages for ${uniqueHackathons.length} hackathons...`);
+    await this.fetchHackathonDetails(uniqueHackathons);
 
     for (const hackathon of uniqueHackathons) {
       try {
@@ -151,9 +158,9 @@ export class TaikaiScraper {
       sponsors: [],
       registration_url: hackathon.registrationUrl,
       website_url: hackathon.registrationUrl,
-      discord_url: null,
-      telegram_url: null,
-      twitter_url: null,
+      discord_url: hackathon.discordUrl || null,
+      telegram_url: hackathon.telegramUrl || null,
+      twitter_url: hackathon.twitterUrl || null,
       logo_url: hackathon.logoUrl || null,
       banner_url: hackathon.bannerUrl || null,
       participant_count: hackathon.participantCount || null,
@@ -197,5 +204,210 @@ export class TaikaiScraper {
     if (now < start) return "upcoming";
     if (now >= start && now <= end) return "ongoing";
     return "completed";
+  }
+
+  private async fetchHackathonDetails(hackathons: TaikaiHackathon[]): Promise<void> {
+    const parseDate = this.parseDate.bind(this);
+
+    const detailCrawler = new PlaywrightCrawler({
+      maxConcurrency: 3,
+      maxRequestRetries: 2,
+      requestHandlerTimeoutSecs: 60,
+
+      async requestHandler({ page, request, log }) {
+        const id = request.userData.id;
+        const hackathon = hackathons.find(h => h.id === id);
+        if (!hackathon) return;
+
+        try {
+          await page.waitForLoadState("domcontentloaded");
+          await page.waitForTimeout(2000);
+
+          const pageText = await page.textContent("body") || "";
+
+          // Extract dates - Taikai uses formats like "Jan 15 - Feb 20, 2025" or "15 Jan - 20 Feb 2025"
+          const datePatterns = [
+            // "Jan 15 - Feb 20, 2025" or "Jan 15 – Feb 20, 2025"
+            /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s*[-–]\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),?\s*(\d{4})/i,
+            // "Jan 15 - 20, 2025" (same month)
+            /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s*[-–]\s*(\d{1,2}),?\s*(\d{4})/i,
+            // "15 Jan - 20 Feb 2025"
+            /(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*[-–]\s*(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*,?\s*(\d{4})/i,
+            // "January 15 - February 20, 2025"
+            /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[-–]\s*(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s*(\d{4})/i,
+          ];
+
+          let foundDate = false;
+          for (const pattern of datePatterns) {
+            const match = pageText.match(pattern);
+            if (match) {
+              log.info(`Found date pattern for ${id}: ${match[0]}`);
+              const parsed = parseDate(match[0]);
+              if (parsed) {
+                hackathon.startDate = parsed.startDate;
+                hackathon.endDate = parsed.endDate;
+                foundDate = true;
+                break;
+              }
+            }
+          }
+
+          // Try JSON-LD structured data
+          if (!foundDate) {
+            const scripts = await page.$$eval("script[type='application/ld+json']", els =>
+              els.map(el => el.textContent)
+            );
+            for (const script of scripts) {
+              if (script) {
+                try {
+                  const data = JSON.parse(script);
+                  if (data.startDate) {
+                    hackathon.startDate = new Date(data.startDate).toISOString();
+                    foundDate = true;
+                  }
+                  if (data.endDate) {
+                    hackathon.endDate = new Date(data.endDate).toISOString();
+                  }
+                } catch {}
+              }
+            }
+          }
+
+          // If no date found, set default based on status
+          if (!foundDate || !hackathon.startDate) {
+            log.warning(`Could not find dates for ${id}, using default`);
+            const now = new Date();
+            hackathon.startDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+            hackathon.endDate = new Date(now.getTime() + 37 * 24 * 60 * 60 * 1000).toISOString();
+          }
+
+          // Extract description
+          const descEl = await page.$('[class*="description"], [class*="about"], .challenge-description, article');
+          if (descEl) {
+            const desc = await descEl.textContent();
+            if (desc && desc.length > 50) {
+              hackathon.description = desc.trim().substring(0, 1000);
+            }
+          }
+
+          // Extract banner image
+          const ogImage = await page.$('meta[property="og:image"]');
+          if (ogImage) {
+            const content = await ogImage.getAttribute("content");
+            if (content) {
+              hackathon.bannerUrl = content;
+              log.info(`Found banner for ${id}`);
+            }
+          }
+
+          // Extract social links
+          const discordLink = await page.$('a[href*="discord.gg"], a[href*="discord.com"]');
+          if (discordLink) {
+            hackathon.discordUrl = await discordLink.getAttribute("href") || undefined;
+          }
+
+          const twitterLink = await page.$('a[href*="twitter.com"], a[href*="x.com"]');
+          if (twitterLink) {
+            hackathon.twitterUrl = await twitterLink.getAttribute("href") || undefined;
+          }
+
+          const telegramLink = await page.$('a[href*="t.me"], a[href*="telegram"]');
+          if (telegramLink) {
+            hackathon.telegramUrl = await telegramLink.getAttribute("href") || undefined;
+          }
+
+          // Extract location if available
+          const locationEl = await page.$('[class*="location"], [class*="venue"]');
+          if (locationEl) {
+            const location = await locationEl.textContent();
+            if (location && location.trim()) {
+              hackathon.location = location.trim();
+              if (!location.toLowerCase().includes("online") && !location.toLowerCase().includes("virtual")) {
+                hackathon.format = "in-person";
+              }
+            }
+          }
+
+        } catch (error) {
+          log.warning(`Failed to fetch details for ${id}: ${error}`);
+          // Set fallback dates
+          const now = new Date();
+          hackathon.startDate = now.toISOString();
+          hackathon.endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        }
+      },
+    });
+
+    const requests = hackathons.map(h => ({
+      url: h.registrationUrl,
+      userData: { id: h.id }
+    }));
+
+    await detailCrawler.run(requests);
+  }
+
+  private parseDate(dateText: string): { startDate: string; endDate: string } | null {
+    const months: Record<string, number> = {
+      jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
+      apr: 3, april: 3, may: 4, jun: 5, june: 5,
+      jul: 6, july: 6, aug: 7, august: 7, sep: 8, september: 8,
+      oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11
+    };
+
+    try {
+      // Pattern: "Jan 15 - Feb 20, 2025" (different months)
+      const diffMonthMatch = dateText.match(/([A-Za-z]+)\s+(\d{1,2})\s*[-–]\s*([A-Za-z]+)\s+(\d{1,2}),?\s*(\d{4})/i);
+      if (diffMonthMatch) {
+        const startMonth = months[diffMonthMatch[1].toLowerCase()];
+        const startDay = parseInt(diffMonthMatch[2], 10);
+        const endMonth = months[diffMonthMatch[3].toLowerCase()];
+        const endDay = parseInt(diffMonthMatch[4], 10);
+        const year = parseInt(diffMonthMatch[5], 10);
+
+        if (startMonth !== undefined && endMonth !== undefined) {
+          return {
+            startDate: new Date(year, startMonth, startDay).toISOString(),
+            endDate: new Date(year, endMonth, endDay).toISOString()
+          };
+        }
+      }
+
+      // Pattern: "Jan 15 - 20, 2025" (same month)
+      const sameMonthMatch = dateText.match(/([A-Za-z]+)\s+(\d{1,2})\s*[-–]\s*(\d{1,2}),?\s*(\d{4})/i);
+      if (sameMonthMatch) {
+        const month = months[sameMonthMatch[1].toLowerCase()];
+        const startDay = parseInt(sameMonthMatch[2], 10);
+        const endDay = parseInt(sameMonthMatch[3], 10);
+        const year = parseInt(sameMonthMatch[4], 10);
+
+        if (month !== undefined) {
+          return {
+            startDate: new Date(year, month, startDay).toISOString(),
+            endDate: new Date(year, month, endDay).toISOString()
+          };
+        }
+      }
+
+      // Pattern: "15 Jan - 20 Feb 2025" (day before month)
+      const dayFirstMatch = dateText.match(/(\d{1,2})\s*([A-Za-z]+)\s*[-–]\s*(\d{1,2})\s*([A-Za-z]+)\s*,?\s*(\d{4})/i);
+      if (dayFirstMatch) {
+        const startDay = parseInt(dayFirstMatch[1], 10);
+        const startMonth = months[dayFirstMatch[2].toLowerCase()];
+        const endDay = parseInt(dayFirstMatch[3], 10);
+        const endMonth = months[dayFirstMatch[4].toLowerCase()];
+        const year = parseInt(dayFirstMatch[5], 10);
+
+        if (startMonth !== undefined && endMonth !== undefined) {
+          return {
+            startDate: new Date(year, startMonth, startDay).toISOString(),
+            endDate: new Date(year, endMonth, endDay).toISOString()
+          };
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to parse date: ${dateText}`, error);
+    }
+
+    return null;
   }
 }

@@ -20,6 +20,10 @@ interface DoraHacksHackathon {
   logoUrl?: string;
   bannerUrl?: string;
   registrationUrl: string;
+  discordUrl?: string;
+  twitterUrl?: string;
+  telegramUrl?: string;
+  participantCount?: number;
 }
 
 export class DoraHacksScraper {
@@ -239,8 +243,8 @@ export class DoraHacksScraper {
             slug: data.slug,
             name: data.name,
             organizer: data.organizer,
-            startDate: new Date().toISOString(),
-            endDate: new Date().toISOString(),
+            startDate: "", // Will be fetched from detail page
+            endDate: "", // Will be fetched from detail page
             location: data.location,
             format: data.location === "Virtual" ? "online" : "in-person",
             prizePool: data.prizePool,
@@ -259,6 +263,10 @@ export class DoraHacksScraper {
     await crawler.run([`${this.baseUrl}/hackathon`]);
 
     console.log(`DoraHacks: Found ${hackathons.length} unique hackathons`);
+
+    // Fetch details from individual hackathon pages
+    console.log(`DoraHacks: Fetching detail pages for ${hackathons.length} hackathons...`);
+    await this.fetchHackathonDetails(hackathons);
 
     // Save to database
     for (const hackathon of hackathons) {
@@ -299,12 +307,12 @@ export class DoraHacksScraper {
       sponsors: [hackathon.organizer],
       registration_url: hackathon.registrationUrl,
       website_url: hackathon.registrationUrl,
-      discord_url: null,
-      telegram_url: null,
-      twitter_url: null,
+      discord_url: hackathon.discordUrl || null,
+      telegram_url: hackathon.telegramUrl || null,
+      twitter_url: hackathon.twitterUrl || null,
       logo_url: hackathon.logoUrl || null,
       banner_url: hackathon.bannerUrl || null,
-      participant_count: null,
+      participant_count: hackathon.participantCount || null,
       project_count: null,
       status: this.mapStatus(hackathon.status),
       is_official: true,
@@ -348,5 +356,215 @@ export class DoraHacksScraper {
       default:
         return "upcoming";
     }
+  }
+
+  private async fetchHackathonDetails(hackathons: DoraHacksHackathon[]): Promise<void> {
+    const parseDate = this.parseDate.bind(this);
+    const baseUrl = this.baseUrl;
+
+    const detailCrawler = new PlaywrightCrawler({
+      maxConcurrency: 3,
+      maxRequestRetries: 2,
+      requestHandlerTimeoutSecs: 60,
+
+      async requestHandler({ page, request, log }) {
+        const slug = request.userData.slug;
+        const hackathon = hackathons.find(h => h.slug === slug);
+        if (!hackathon) return;
+
+        try {
+          await page.waitForLoadState("domcontentloaded");
+          await page.waitForTimeout(2000); // Let page fully render
+
+          const pageText = await page.textContent("body") || "";
+
+          // Extract dates from the page
+          // DoraHacks typically shows dates like "Dec 16, 2024 - Jan 15, 2025" or "Jan 6 - Feb 28, 2025"
+          const datePatterns = [
+            // "Dec 16, 2024 - Jan 15, 2025" (different months/years)
+            /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),?\s*(\d{4})\s*[-–]\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),?\s*(\d{4})/i,
+            // "Jan 6 - Feb 28, 2025" (different months, same year)
+            /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s*[-–]\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),?\s*(\d{4})/i,
+            // "Jan 6 - 28, 2025" (same month)
+            /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s*[-–]\s*(\d{1,2}),?\s*(\d{4})/i,
+            // "December 16 - January 15, 2025"
+            /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[-–]\s*(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s*(\d{4})/i,
+          ];
+
+          let foundDate = false;
+          for (const pattern of datePatterns) {
+            const match = pageText.match(pattern);
+            if (match) {
+              log.info(`Found date pattern for ${slug}: ${match[0]}`);
+              const parsed = parseDate(match[0]);
+              if (parsed) {
+                hackathon.startDate = parsed.startDate;
+                hackathon.endDate = parsed.endDate;
+                foundDate = true;
+                break;
+              }
+            }
+          }
+
+          // If no date found, try to extract from structured data
+          if (!foundDate) {
+            const scripts = await page.$$eval("script[type='application/ld+json']", els =>
+              els.map(el => el.textContent)
+            );
+            for (const script of scripts) {
+              if (script) {
+                try {
+                  const data = JSON.parse(script);
+                  if (data.startDate) {
+                    hackathon.startDate = new Date(data.startDate).toISOString();
+                    foundDate = true;
+                  }
+                  if (data.endDate) {
+                    hackathon.endDate = new Date(data.endDate).toISOString();
+                  }
+                } catch {}
+              }
+            }
+          }
+
+          // If still no date, set based on status
+          if (!foundDate || !hackathon.startDate) {
+            log.warning(`Could not find dates for ${slug}, using status-based estimation`);
+            const now = new Date();
+            if (hackathon.status === "completed") {
+              hackathon.startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+              hackathon.endDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            } else if (hackathon.status === "ongoing") {
+              hackathon.startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+              hackathon.endDate = new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000).toISOString();
+            } else {
+              hackathon.startDate = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
+              hackathon.endDate = new Date(now.getTime() + 45 * 24 * 60 * 60 * 1000).toISOString();
+            }
+          }
+
+          // Extract description
+          const descEl = await page.$('[class*="description"], [class*="about"], .markdown-body');
+          if (descEl) {
+            const desc = await descEl.textContent();
+            if (desc && desc.length > 50) {
+              hackathon.description = desc.trim().substring(0, 1000);
+            }
+          }
+
+          // Extract banner image
+          const ogImage = await page.$('meta[property="og:image"]');
+          if (ogImage) {
+            const content = await ogImage.getAttribute("content");
+            if (content) {
+              hackathon.bannerUrl = content;
+              log.info(`Found banner for ${slug}`);
+            }
+          }
+
+          // Extract social links
+          const discordLink = await page.$('a[href*="discord.gg"], a[href*="discord.com"]');
+          if (discordLink) {
+            hackathon.discordUrl = await discordLink.getAttribute("href") || undefined;
+          }
+
+          const twitterLink = await page.$('a[href*="twitter.com"], a[href*="x.com"]');
+          if (twitterLink) {
+            hackathon.twitterUrl = await twitterLink.getAttribute("href") || undefined;
+          }
+
+          const telegramLink = await page.$('a[href*="t.me"], a[href*="telegram"]');
+          if (telegramLink) {
+            hackathon.telegramUrl = await telegramLink.getAttribute("href") || undefined;
+          }
+
+          // Extract participant count
+          const participantMatch = pageText.match(/(\d{1,3}(?:,\d{3})*)\s*(?:BUIDLers?|participants?|builders?|hackers?)/i);
+          if (participantMatch) {
+            hackathon.participantCount = parseInt(participantMatch[1].replace(/,/g, ""), 10);
+          }
+
+        } catch (error) {
+          log.warning(`Failed to fetch details for ${slug}: ${error}`);
+          // Set fallback dates
+          const now = new Date();
+          hackathon.startDate = now.toISOString();
+          hackathon.endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        }
+      },
+    });
+
+    const requests = hackathons.map(h => ({
+      url: h.registrationUrl,
+      userData: { slug: h.slug }
+    }));
+
+    await detailCrawler.run(requests);
+  }
+
+  private parseDate(dateText: string): { startDate: string; endDate: string } | null {
+    const months: Record<string, number> = {
+      jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
+      apr: 3, april: 3, may: 4, jun: 5, june: 5,
+      jul: 6, july: 6, aug: 7, august: 7, sep: 8, september: 8,
+      oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11
+    };
+
+    try {
+      // Pattern: "Dec 16, 2024 - Jan 15, 2025" (different months/years)
+      const diffYearMatch = dateText.match(/([A-Za-z]+)\s+(\d{1,2}),?\s*(\d{4})\s*[-–]\s*([A-Za-z]+)\s+(\d{1,2}),?\s*(\d{4})/i);
+      if (diffYearMatch) {
+        const startMonth = months[diffYearMatch[1].toLowerCase()];
+        const startDay = parseInt(diffYearMatch[2], 10);
+        const startYear = parseInt(diffYearMatch[3], 10);
+        const endMonth = months[diffYearMatch[4].toLowerCase()];
+        const endDay = parseInt(diffYearMatch[5], 10);
+        const endYear = parseInt(diffYearMatch[6], 10);
+
+        if (startMonth !== undefined && endMonth !== undefined) {
+          return {
+            startDate: new Date(startYear, startMonth, startDay).toISOString(),
+            endDate: new Date(endYear, endMonth, endDay).toISOString()
+          };
+        }
+      }
+
+      // Pattern: "Jan 6 - Feb 28, 2025" (different months, same year)
+      const diffMonthMatch = dateText.match(/([A-Za-z]+)\s+(\d{1,2})\s*[-–]\s*([A-Za-z]+)\s+(\d{1,2}),?\s*(\d{4})/i);
+      if (diffMonthMatch) {
+        const startMonth = months[diffMonthMatch[1].toLowerCase()];
+        const startDay = parseInt(diffMonthMatch[2], 10);
+        const endMonth = months[diffMonthMatch[3].toLowerCase()];
+        const endDay = parseInt(diffMonthMatch[4], 10);
+        const year = parseInt(diffMonthMatch[5], 10);
+
+        if (startMonth !== undefined && endMonth !== undefined) {
+          return {
+            startDate: new Date(year, startMonth, startDay).toISOString(),
+            endDate: new Date(year, endMonth, endDay).toISOString()
+          };
+        }
+      }
+
+      // Pattern: "Jan 6 - 28, 2025" (same month)
+      const sameMonthMatch = dateText.match(/([A-Za-z]+)\s+(\d{1,2})\s*[-–]\s*(\d{1,2}),?\s*(\d{4})/i);
+      if (sameMonthMatch) {
+        const month = months[sameMonthMatch[1].toLowerCase()];
+        const startDay = parseInt(sameMonthMatch[2], 10);
+        const endDay = parseInt(sameMonthMatch[3], 10);
+        const year = parseInt(sameMonthMatch[4], 10);
+
+        if (month !== undefined) {
+          return {
+            startDate: new Date(year, month, startDay).toISOString(),
+            endDate: new Date(year, month, endDay).toISOString()
+          };
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to parse date: ${dateText}`, error);
+    }
+
+    return null;
   }
 }
