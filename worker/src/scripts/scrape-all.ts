@@ -1,6 +1,9 @@
 import "dotenv/config";
 import { EthGlobalScraper } from "../scrapers/hackathons/EthGlobalScraper.js";
 import { DevfolioScraper } from "../scrapers/hackathons/DevfolioScraper.js";
+import { DoraHacksScraper } from "../scrapers/hackathons/DoraHacksScraper.js";
+import { AkindoScraper } from "../scrapers/hackathons/AkindoScraper.js";
+import { DevpostScraper } from "../scrapers/hackathons/DevpostScraper.js";
 import { FoundationGrantsScraper } from "../scrapers/grants/FoundationGrantsScraper.js";
 
 async function main() {
@@ -17,6 +20,24 @@ async function main() {
   const devfolio = new DevfolioScraper();
   const devResult = await devfolio.run();
   console.log(`Found: ${devResult.found}, Created: ${devResult.created}, Updated: ${devResult.updated}\n`);
+
+  // DoraHacks
+  console.log("=== DoraHacks Scraper ===");
+  const doraHacks = new DoraHacksScraper();
+  const doraResult = await doraHacks.run();
+  console.log(`Found: ${doraResult.found}, Created: ${doraResult.created}, Updated: ${doraResult.updated}\n`);
+
+  // Akindo
+  console.log("=== Akindo Scraper ===");
+  const akindo = new AkindoScraper();
+  const akindoResult = await akindo.run();
+  console.log(`Found: ${akindoResult.found}, Created: ${akindoResult.created}, Updated: ${akindoResult.updated}\n`);
+
+  // Devpost
+  console.log("=== Devpost Scraper ===");
+  const devpost = new DevpostScraper();
+  const devpostResult = await devpost.run();
+  console.log(`Found: ${devpostResult.found}, Created: ${devpostResult.created}, Updated: ${devpostResult.updated}\n`);
 
   // Grants
   console.log("=== Foundation Grants Scraper ===");
