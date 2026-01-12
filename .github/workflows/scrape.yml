@@ -1,0 +1,67 @@
+name: Scrape Data
+
+on:
+  # Run daily at 00:00 UTC
+  schedule:
+    - cron: '0 0 * * *'
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      scraper:
+        description: 'Which scraper to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - ethglobal
+          - devfolio
+          - grants
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install chromium
+
+      - name: Run scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.scraper }}" = "ethglobal" ]; then
+            pnpm scrape:ethglobal
+          elif [ "${{ github.event.inputs.scraper }}" = "devfolio" ]; then
+            pnpm scrape:devfolio
+          elif [ "${{ github.event.inputs.scraper }}" = "grants" ]; then
+            pnpm scrape:grants
+          else
+            pnpm scrape:all
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Scraping completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Scraper: ${{ github.event.inputs.scraper || 'all' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Time: $(date -u)" >> $GITHUB_STEP_SUMMARY

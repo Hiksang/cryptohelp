@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "scrape:all": "tsx src/scripts/scrape-all.ts",
+    "scrape:ethglobal": "tsx src/scripts/scrape-ethglobal.ts",
+    "scrape:devfolio": "tsx src/scripts/scrape-devfolio.ts",
+    "scrape:grants": "tsx src/scripts/scrape-grants.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -16,6 +20,9 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@supabase/supabase-js": "^2.90.1",
+    "crawlee": "^3.13.1",
+    "dotenv": "^16.5.0",
+    "playwright": "^1.52.0",
     "@tanstack/react-query": "^5.90.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -32,6 +39,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "tsx": "^4.20.0",
     "@types/react": "^19",
     "@types/react-big-calendar": "^1.16.3",
     "@types/react-dom": "^19",
