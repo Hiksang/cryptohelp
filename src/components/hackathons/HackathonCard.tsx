@@ -110,36 +110,41 @@ export function HackathonCard({ hackathon }: HackathonCardProps) {
         )}
 
         {/* Info Grid */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          {/* Dates */}
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Calendar className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">
-              {format(startDate, "MMM d")} - {format(endDate, "MMM d, yyyy")}
-            </span>
+        <div className="space-y-2 text-xs">
+          {/* Dates & Format Row */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5 shrink-0" />
+              <span>
+                {format(startDate, "MMM d")} - {format(endDate, "MMM d, yyyy")}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Globe className="h-3.5 w-3.5 shrink-0" />
+              <span>{formatLabels[hackathon.format] || hackathon.format}</span>
+            </div>
           </div>
 
-          {/* Format */}
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Globe className="h-3.5 w-3.5 shrink-0" />
-            <span>{formatLabels[hackathon.format] || hackathon.format}</span>
+          {/* Location & Participants Row */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Location (if in-person or hybrid) */}
+            {locationDisplay && hackathon.format !== "online" ? (
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                <span>{locationDisplay}</span>
+              </div>
+            ) : (
+              <div />
+            )}
+
+            {/* Participants */}
+            {hackathon.participant_count ? (
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Users className="h-3.5 w-3.5 shrink-0" />
+                <span>{hackathon.participant_count.toLocaleString()} participants</span>
+              </div>
+            ) : null}
           </div>
-
-          {/* Location (if in-person or hybrid) */}
-          {locationDisplay && hackathon.format !== "online" && (
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{locationDisplay}</span>
-            </div>
-          )}
-
-          {/* Participants */}
-          {hackathon.participant_count && (
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Users className="h-3.5 w-3.5 shrink-0" />
-              <span>{hackathon.participant_count.toLocaleString()} participants</span>
-            </div>
-          )}
         </div>
 
         {/* Prize Pool */}
