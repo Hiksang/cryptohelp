@@ -2,33 +2,68 @@ import "dotenv/config";
 import cron from "node-cron";
 import { EthGlobalScraper } from "./scrapers/hackathons/EthGlobalScraper.js";
 import { DevfolioScraper } from "./scrapers/hackathons/DevfolioScraper.js";
+import { DoraHacksScraper } from "./scrapers/hackathons/DoraHacksScraper.js";
+import { AkindoScraper } from "./scrapers/hackathons/AkindoScraper.js";
+import { DevpostScraper } from "./scrapers/hackathons/DevpostScraper.js";
 import { FoundationGrantsScraper } from "./scrapers/grants/FoundationGrantsScraper.js";
 
-const SCHEDULE = process.env.SCRAPE_SCHEDULE || "0 0 * * *"; // Default: daily at midnight
+const SCHEDULE = process.env.SCRAPE_SCHEDULE || "0 */6 * * *"; // Default: every 6 hours
 
 async function runAllScrapers() {
   console.log(`[${new Date().toISOString()}] Starting all scrapers...`);
 
+  const results: { name: string; found: number; created: number; updated: number }[] = [];
+
   try {
     // ETHGlobal
-    console.log("Running ETHGlobal scraper...");
+    console.log("\n=== ETHGlobal Scraper ===");
     const ethGlobal = new EthGlobalScraper();
     const ethResult = await ethGlobal.run();
+    results.push({ name: "ETHGlobal", ...ethResult });
     console.log(`ETHGlobal: Found ${ethResult.found}, Created ${ethResult.created}, Updated ${ethResult.updated}`);
 
     // Devfolio
-    console.log("Running Devfolio scraper...");
+    console.log("\n=== Devfolio Scraper ===");
     const devfolio = new DevfolioScraper();
     const devResult = await devfolio.run();
+    results.push({ name: "Devfolio", ...devResult });
     console.log(`Devfolio: Found ${devResult.found}, Created ${devResult.created}, Updated ${devResult.updated}`);
 
+    // DoraHacks
+    console.log("\n=== DoraHacks Scraper ===");
+    const doraHacks = new DoraHacksScraper();
+    const doraResult = await doraHacks.run();
+    results.push({ name: "DoraHacks", ...doraResult });
+    console.log(`DoraHacks: Found ${doraResult.found}, Created ${doraResult.created}, Updated ${doraResult.updated}`);
+
+    // Akindo
+    console.log("\n=== Akindo Scraper ===");
+    const akindo = new AkindoScraper();
+    const akindoResult = await akindo.run();
+    results.push({ name: "Akindo", ...akindoResult });
+    console.log(`Akindo: Found ${akindoResult.found}, Created ${akindoResult.created}, Updated ${akindoResult.updated}`);
+
+    // Devpost
+    console.log("\n=== Devpost Scraper ===");
+    const devpost = new DevpostScraper();
+    const devpostResult = await devpost.run();
+    results.push({ name: "Devpost", ...devpostResult });
+    console.log(`Devpost: Found ${devpostResult.found}, Created ${devpostResult.created}, Updated ${devpostResult.updated}`);
+
     // Grants
-    console.log("Running Grants scraper...");
+    console.log("\n=== Foundation Grants Scraper ===");
     const grants = new FoundationGrantsScraper();
     const grantResult = await grants.run();
+    results.push({ name: "Grants", ...grantResult });
     console.log(`Grants: Found ${grantResult.found}, Created ${grantResult.created}, Updated ${grantResult.updated}`);
 
-    console.log(`[${new Date().toISOString()}] All scrapers completed successfully.`);
+    // Summary
+    const totalFound = results.reduce((sum, r) => sum + r.found, 0);
+    const totalCreated = results.reduce((sum, r) => sum + r.created, 0);
+    const totalUpdated = results.reduce((sum, r) => sum + r.updated, 0);
+
+    console.log(`\n[${new Date().toISOString()}] All scrapers completed successfully.`);
+    console.log(`Summary: Total Found: ${totalFound}, Created: ${totalCreated}, Updated: ${totalUpdated}`);
   } catch (error) {
     console.error("Scraper error:", error);
   }
