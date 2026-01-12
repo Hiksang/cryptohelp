@@ -4,6 +4,8 @@ import { DevfolioScraper } from "../scrapers/hackathons/DevfolioScraper.js";
 import { DoraHacksScraper } from "../scrapers/hackathons/DoraHacksScraper.js";
 import { AkindoScraper } from "../scrapers/hackathons/AkindoScraper.js";
 import { DevpostScraper } from "../scrapers/hackathons/DevpostScraper.js";
+import { HackQuestScraper } from "../scrapers/hackathons/HackQuestScraper.js";
+import { TaikaiScraper } from "../scrapers/hackathons/TaikaiScraper.js";
 import { FoundationGrantsScraper } from "../scrapers/grants/FoundationGrantsScraper.js";
 
 async function main() {
@@ -38,6 +40,18 @@ async function main() {
   const devpost = new DevpostScraper();
   const devpostResult = await devpost.run();
   console.log(`Found: ${devpostResult.found}, Created: ${devpostResult.created}, Updated: ${devpostResult.updated}\n`);
+
+  // HackQuest
+  console.log("=== HackQuest Scraper ===");
+  const hackquest = new HackQuestScraper();
+  const hackquestResult = await hackquest.run();
+  console.log(`Found: ${hackquestResult.found}, Created: ${hackquestResult.created}, Updated: ${hackquestResult.updated}\n`);
+
+  // Taikai
+  console.log("=== Taikai Scraper ===");
+  const taikai = new TaikaiScraper();
+  const taikaiResult = await taikai.run();
+  console.log(`Found: ${taikaiResult.found}, Created: ${taikaiResult.created}, Updated: ${taikaiResult.updated}\n`);
 
   // Grants
   console.log("=== Foundation Grants Scraper ===");

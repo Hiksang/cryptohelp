@@ -5,6 +5,8 @@ import { DevfolioScraper } from "./scrapers/hackathons/DevfolioScraper.js";
 import { DoraHacksScraper } from "./scrapers/hackathons/DoraHacksScraper.js";
 import { AkindoScraper } from "./scrapers/hackathons/AkindoScraper.js";
 import { DevpostScraper } from "./scrapers/hackathons/DevpostScraper.js";
+import { HackQuestScraper } from "./scrapers/hackathons/HackQuestScraper.js";
+import { TaikaiScraper } from "./scrapers/hackathons/TaikaiScraper.js";
 import { FoundationGrantsScraper } from "./scrapers/grants/FoundationGrantsScraper.js";
 
 const SCHEDULE = process.env.SCRAPE_SCHEDULE || "0 */6 * * *"; // Default: every 6 hours
@@ -49,6 +51,20 @@ async function runAllScrapers() {
     const devpostResult = await devpost.run();
     results.push({ name: "Devpost", ...devpostResult });
     console.log(`Devpost: Found ${devpostResult.found}, Created ${devpostResult.created}, Updated ${devpostResult.updated}`);
+
+    // HackQuest
+    console.log("\n=== HackQuest Scraper ===");
+    const hackquest = new HackQuestScraper();
+    const hackquestResult = await hackquest.run();
+    results.push({ name: "HackQuest", ...hackquestResult });
+    console.log(`HackQuest: Found ${hackquestResult.found}, Created ${hackquestResult.created}, Updated ${hackquestResult.updated}`);
+
+    // Taikai
+    console.log("\n=== Taikai Scraper ===");
+    const taikai = new TaikaiScraper();
+    const taikaiResult = await taikai.run();
+    results.push({ name: "Taikai", ...taikaiResult });
+    console.log(`Taikai: Found ${taikaiResult.found}, Created ${taikaiResult.created}, Updated ${taikaiResult.updated}`);
 
     // Grants
     console.log("\n=== Foundation Grants Scraper ===");
