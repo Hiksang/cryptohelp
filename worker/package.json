@@ -10,6 +10,11 @@
     "scrape:all": "tsx src/scripts/scrape-all.ts",
     "scrape:ethglobal": "tsx src/scripts/scrape-ethglobal.ts",
     "scrape:devfolio": "tsx src/scripts/scrape-devfolio.ts",
+    "scrape:dorahacks": "tsx src/scripts/scrape-dorahacks.ts",
+    "scrape:akindo": "tsx src/scripts/scrape-akindo.ts",
+    "scrape:devpost": "tsx src/scripts/scrape-devpost.ts",
+    "scrape:hackquest": "tsx src/scripts/scrape-hackquest.ts",
+    "scrape:taikai": "tsx src/scripts/scrape-taikai.ts",
     "scrape:grants": "tsx src/scripts/scrape-grants.ts"
   },
   "dependencies": {

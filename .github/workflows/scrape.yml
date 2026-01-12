@@ -1,9 +1,9 @@
 name: Scrape Data
 
 on:
-  # Run daily at 00:00 UTC
+  # Run every 6 hours
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 */6 * * *'
   # Allow manual trigger
   workflow_dispatch:
     inputs:
@@ -16,12 +16,21 @@ on:
           - all
           - ethglobal
           - devfolio
+          - dorahacks
+          - akindo
+          - devpost
+          - hackquest
+          - taikai
           - grants
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
+
+    defaults:
+      run:
+        working-directory: worker
 
     steps:
       - name: Checkout repository
@@ -37,27 +46,30 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+          cache-dependency-path: worker/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install chromium
+        run: pnpm exec playwright install chromium --with-deps
 
       - name: Run scraper
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          if [ "${{ github.event.inputs.scraper }}" = "ethglobal" ]; then
-            pnpm scrape:ethglobal
-          elif [ "${{ github.event.inputs.scraper }}" = "devfolio" ]; then
-            pnpm scrape:devfolio
-          elif [ "${{ github.event.inputs.scraper }}" = "grants" ]; then
-            pnpm scrape:grants
-          else
-            pnpm scrape:all
-          fi
+          case "${{ github.event.inputs.scraper }}" in
+            ethglobal) pnpm scrape:ethglobal ;;
+            devfolio) pnpm scrape:devfolio ;;
+            dorahacks) pnpm scrape:dorahacks ;;
+            akindo) pnpm scrape:akindo ;;
+            devpost) pnpm scrape:devpost ;;
+            hackquest) pnpm scrape:hackquest ;;
+            taikai) pnpm scrape:taikai ;;
+            grants) pnpm scrape:grants ;;
+            *) pnpm scrape:all ;;
+          esac
 
       - name: Summary
         if: always()
