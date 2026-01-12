@@ -1,0 +1,9 @@
+{
+	"id": "22Y9uXERf7glupl",
+	"json": "{\"id\":\"22Y9uXERf7glupl\",\"url\":\"https://ethglobal.com/events\",\"loadedUrl\":\"https://ethglobal.com/events\",\"uniqueKey\":\"https://ethglobal.com/events\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-01-12T11:56:33.686Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://ethglobal.com/events",
+	"url": "https://ethglobal.com/events"
+}
