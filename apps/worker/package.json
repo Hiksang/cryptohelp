@@ -1,0 +1,31 @@
+{
+  "name": "worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup src/index.ts --format esm --dts",
+    "start": "node dist/index.js",
+    "scrape:ethglobal": "tsx src/scripts/scrape-ethglobal.ts",
+    "scrape:devfolio": "tsx src/scripts/scrape-devfolio.ts",
+    "scrape:grants": "tsx src/scripts/scrape-grants.ts",
+    "scrape:all": "tsx src/scripts/scrape-all.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cryptohelp/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.90.1",
+    "bullmq": "^5.45.2",
+    "crawlee": "^3.13.1",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.5.0",
+    "playwright": "^1.52.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.7.3"
+  }
+}

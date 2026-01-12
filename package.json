@@ -1,0 +1,24 @@
+{
+  "name": "cryptohelp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web3 Hackathon & Grants Aggregation Platform",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "dev:web": "turbo dev --filter=web",
+    "dev:worker": "turbo dev --filter=worker",
+    "build:web": "turbo build --filter=web",
+    "build:worker": "turbo build --filter=worker"
+  },
+  "keywords": ["web3", "hackathon", "grants", "blockchain"],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.0",
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3"
+  }
+}
